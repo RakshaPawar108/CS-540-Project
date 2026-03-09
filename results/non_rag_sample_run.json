@@ -1,0 +1,45 @@
+{
+  "run_date": "2026-03-09T00:00:00",
+  "model": "llama3.1-local",
+  "dataset": "PubMedQA pqa_labeled",
+  "n_samples": 5,
+  "accuracy": 0.6,
+  "correct": 3,
+  "samples": [
+    {
+      "question": "Do mitochondria play a role in remodelling lace plant leaves during programmed cell death?",
+      "expected": "yes",
+      "response": "Yes.",
+      "latency_s": 45.97,
+      "correct": true
+    },
+    {
+      "question": "Landolt C and snellen e acuity: differences in strabismic and nonstrabismic amblyopia?",
+      "expected": "no",
+      "response": "Yes.",
+      "latency_s": 0.64,
+      "correct": false
+    },
+    {
+      "question": "Syncope during bathing in infants, a pediatric form of water-induced urticaria?",
+      "expected": "yes",
+      "response": "Yes.",
+      "latency_s": 0.21,
+      "correct": true
+    },
+    {
+      "question": "Are the long-term results of the transanal pull-through equal to those of the transabdominal pull-through?",
+      "expected": "no",
+      "response": "Maybe",
+      "latency_s": 0.21,
+      "correct": false
+    },
+    {
+      "question": "Can tailored interventions increase mammography use among HMO women?",
+      "expected": "yes",
+      "response": "Yes.",
+      "latency_s": 0.24,
+      "correct": true
+    }
+  ]
+}

@@ -19,14 +19,14 @@ SUPPORTED_MODELS = {
     # Anthropic models
     "claude-sonnet-4.5": {
         "provider": "anthropic",
-        "model_id": "claude-sonnet-4-5-20241022",
+        "model_id": "claude-sonnet-4-5-20250929",
         "description": "Claude Sonnet 4.5 — balanced performance",
         "cost_per_1k_input_tokens": 0.003,
         "cost_per_1k_output_tokens": 0.015,
     },
     "claude-haiku-4.5": {
         "provider": "anthropic",
-        "model_id": "claude-haiku-4-5-20241022",
+        "model_id": "claude-haiku-4-5-20251001",
         "description": "Claude Haiku 4.5 — fast and cheap",
         "cost_per_1k_input_tokens": 0.0008,
         "cost_per_1k_output_tokens": 0.004,
@@ -34,8 +34,8 @@ SUPPORTED_MODELS = {
     # Groq (free tier)
     "llama3.1-groq": {
         "provider": "groq",
-        "model_id": "llama-3.1-70b-versatile",
-        "description": "Llama 3.1 70B via Groq — free cloud inference",
+        "model_id": "llama-3.3-70b-versatile",
+        "description": "Llama 3.3 70B via Groq — free cloud inference",
         "cost_per_1k_input_tokens": 0.0,
         "cost_per_1k_output_tokens": 0.0,
     },

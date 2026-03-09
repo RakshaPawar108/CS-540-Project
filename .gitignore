@@ -46,3 +46,6 @@ chroma_db/
 
 # Logs
 *.log
+
+# Results (auto-generated runs; commit sample runs explicitly)
+results/non_rag_2*.json
