@@ -18,12 +18,13 @@ CS540 Advanced Software Engineering project comparing three medical chatbot stra
 
 ## Tech Stack
 - **LLM Framework**: LangChain + LangGraph
-- **Local Model**: Ollama (Llama 3.1 8B)
-- **Cloud Models**: OpenAI GPT-4o (primary), Groq Llama 3.1 70B (free tier), Anthropic Claude
-- **Vector DB**: ChromaDB / Pinecone
-- **Backend**: FastAPI
+- **Active Model**: Groq Llama 3.3 70B (`llama-3.3-70b-versatile`) — free tier, priority
+- **Local Model**: Ollama Llama 3.1 8B — benchmark/evaluation only
+- **Cloud Models**: OpenAI GPT-4o (optional fallback), Anthropic Claude
+- **Vector DB**: ChromaDB (persisted to `backend/chroma_db/`)
+- **Backend**: FastAPI (entry point: `backend/app/main.py`)
 - **Frontend**: React or Streamlit
-- **Language**: Python 3.11
+- **Language**: Python 3.11, conda env `medical-chatbot`
 
 ## Datasets
 - **MedMCQA**: 194k+ medical MCQs (training + evaluation)
@@ -36,12 +37,51 @@ CS540 Advanced Software Engineering project comparing three medical chatbot stra
 - Cost per query
 - Hallucination rate
 
+## Project Structure
+```
+medical-chatbot/
+├── src/                         # Benchmark tooling (ModelFactory, multi-provider)
+│   └── models/model_factory.py  # Registry for OpenAI, Anthropic, Groq, Ollama
+├── scripts/                     # Standalone evaluation scripts
+│   └── demo_non_rag.py          # Non-RAG benchmark against PubMedQA
+├── tests/                       # Unit tests for src/
+├── backend/                     # FastAPI server (team integration target)
+│   ├── app/
+│   │   ├── main.py              # Server entry point — registers all routers
+│   │   ├── config.py            # Pydantic Settings (reads backend/.env)
+│   │   ├── models/schemas.py    # Shared request/response schemas (do not modify)
+│   │   ├── routers/             # Routes pre-wired — each person edits their service only
+│   │   └── services/
+│   │       ├── llm_service.py   # MEDICAL_SYSTEM_PROMPT + ask_single() implemented (S1)
+│   │       │                    # ask_with_context(), ask_multi_turn(),
+│   │       │                    # ask_multi_turn_with_context() → stubs for teammates
+│   │       ├── rag_service.py   # Stubs for Person 3 & 5
+│   │       ├── ingestion_service.py # Stub for Person 1
+│   │       └── conversation_store.py # In-memory session store — fully implemented
+│   ├── requirements.txt         # Backend deps (no torch — RAG heavy deps commented out)
+│   └── .env.example             # Copy to .env, fill in GROQ_API_KEY
+└── requirements.txt             # Root deps for benchmark scripts
+```
+
 ## Conventions
-- **Python**: 3.11, conda env `medical-chatbot`
-- **Source code**: `src/`
-- **Tests**: `tests/` (pytest)
-- **Scripts**: `scripts/` (manual/ad-hoc utilities)
-- **Config**: `src/config.py` for model definitions and shared settings
+- **Integration rule**: Keep all routing in FastAPI. Each person only edits their service stub.
+- **Shared system prompt**: `MEDICAL_SYSTEM_PROMPT` in `backend/app/services/llm_service.py` — all strategies must use this.
+- **API keys**: All read from `backend/.env` via `get_settings()` — never hardcode.
+- **Config**: `backend/app/config.py` for FastAPI settings; `src/config.py` for benchmark ModelFactory.
+- **No torch**: Do not install `sentence-transformers` — pulls in PyTorch (~900MB). RAG embeddings are lazy.
+
+## Running the Server
+```bash
+cd backend
+conda activate medical-chatbot
+uvicorn app.main:app --reload
+# Swagger UI: http://localhost:8000/docs
+# S1 test: POST http://localhost:8000/api/v1/chat/single-llm/  {"query": "..."}
+```
 
 ## Current Status
-- **Task 1**: Complete — ModelFactory implemented with support for OpenAI, Anthropic, Groq, and Ollama
+- **Task 1 (S1)**: Complete — ModelFactory + Non-RAG benchmark (`scripts/demo_non_rag.py`)
+- **FastAPI integration**: Complete — `backend/` added to `llm-call` branch; S1 (`ask_single`) implemented and tested via Groq; `MEDICAL_SYSTEM_PROMPT` defined for team reuse
+- **Task 2 (S2)**: Vector DB & ingestion pipeline — teammate's branch (`vector-pipeline`)
+- **Task 3 (S3/S4)**: Multi-turn variants — teammate branches (`multi-turn-llm-chatbot`, `multi_turn_rag`)
+- **Next**: Integration merge — combine all branches into a single working server
