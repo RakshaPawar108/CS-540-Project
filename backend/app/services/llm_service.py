@@ -13,9 +13,20 @@ import os
 
 from dotenv import load_dotenv
 from openai import OpenAI
+from langchain_groq import ChatGroq
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
-from app.config import get_settings
 from app.models.schemas import Message
+from app.config import get_settings
+
+
+def _get_llm() -> ChatGroq:
+    settings = get_settings()
+    return ChatGroq(
+        model=settings.groq_model,
+        temperature=settings.temperature,
+        api_key=settings.groq_api_key,
+    )
 
 load_dotenv()  # ensures .env values are in os.environ for os.getenv() calls
 
@@ -91,5 +102,31 @@ def ask_multi_turn(query: str, history: list[Message]) -> dict:
 
 
 def ask_multi_turn_with_context(query: str, history: list[Message], context: str) -> dict:
-    """S4: LLM call with conversation history + retrieved context."""
-    raise NotImplementedError
+    """S4: LLM call with conversation history + retrieved PubMed context."""
+    llm = _get_llm()
+
+    system = SystemMessage(content=(
+        "You are a helpful medical assistant. "
+        "Answer the user's question using only the PubMed context provided. "
+        "If the context does not contain enough information, say so. "
+        "Be concise and cite the source PMIDs when relevant.\n\n"
+        f"Context from PubMed:\n{context}"
+    ))
+
+    messages = [system]
+    for m in history:
+        if m.role == "user":
+            messages.append(HumanMessage(content=m.content))
+        else:
+            messages.append(AIMessage(content=m.content))
+    messages.append(HumanMessage(content=query))
+
+    response = llm.invoke(messages)
+    usage = response.response_metadata.get("token_usage", {})
+
+    return {
+        "answer": response.content,
+        "model": llm.model_name,
+        "prompt_tokens": usage.get("prompt_tokens"),
+        "completion_tokens": usage.get("completion_tokens"),
+    }

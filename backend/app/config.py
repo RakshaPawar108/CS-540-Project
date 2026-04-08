@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     # LLM
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
     temperature: float = 0.0
 
     # Embeddings — sentence-transformers/all-MiniLM-L6-v2 (runs locally, no API key)
