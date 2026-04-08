@@ -1,127 +1,186 @@
-# Medical Chatbot — Strategy Comparison
+# CS-540-Project — Medical Chatbot Strategy Comparison
 
-CS540 Advanced Software Engineering project comparing three medical chatbot strategies to measure the impact of Retrieval-Augmented Generation (RAG) on medical question answering.
+Team Pentacle · CS 540 · UIC
 
-## Project Overview
+Compares four LLM strategies on medical Q&A (MedMCQA / PubMedQA):
 
-Three strategies are implemented and evaluated:
-
-1. **Non-RAG** — direct LLM calls with no retrieval (baseline)
-2. **Single-Turn RAG** — retrieval-augmented generation, one question at a time
-3. **Multi-Turn RAG** — RAG with full conversation history
-
-Datasets: PubMedQA (yes/no/maybe), MedMCQA (MCQ). Evaluation: accuracy, latency (p50/p95/p99), cost per query, hallucination rate.
+| Strategy | RAG | Memory |
+|----------|-----|--------|
+| S1 — Single LLM | — | — |
+| S2 — Single RAG | ✓ | — |
+| S3 — Multi-Turn LLM | — | ✓ |
+| S4 — Multi-Turn RAG | ✓ | ✓ |
 
 ---
 
-## Repository Structure
+## Project structure
 
 ```
-medical-chatbot/
-├── src/
-│   ├── config.py            # Shared model definitions and settings
-│   └── models/
-│       └── model_factory.py # ModelFactory — creates LangChain chat models
-├── scripts/
-│   ├── download_pubmedqa.py # Downloads PubMedQA labeled split to data/
-│   ├── demo_non_rag.py      # Non-RAG baseline demo (Task 1 deliverable)
-│   └── test_local_model.py  # Quick smoke test for local Ollama connection
+backend/
+├── app/
+│   ├── main.py                        # FastAPI app entry point — registers all routers
+│   ├── config.py                      # All settings (reads from .env)
+│   ├── dependencies.py                # Shared FastAPI dependency re-exports
+│   ├── models/
+│   │   └── schemas.py                 # All request/response Pydantic models (shared)
+│   ├── core/
+│   │   ├── embeddings.py              # Embedding model singleton (all-MiniLM-L6-v2)
+│   │   └── vector_store.py            # ChromaDB client singleton
+│   ├── services/
+│   │   ├── ingestion_service.py       # ← Person 1: implement ingest()
+│   │   ├── llm_service.py             # ← Person 2: ask_single()
+│   │   │                              #   Person 3: ask_with_context()
+│   │   │                              #   Person 4: ask_multi_turn()
+│   │   │                              #   Person 5: ask_multi_turn_with_context()
+│   │   ├── rag_service.py             # ← Person 3: implement retrieve()
+│   │   │                              #   Person 5: implement retrieve_with_history()
+│   │   └── conversation_store.py      # Session history for S3/S4 — already implemented
+│   └── routers/
+│       ├── ingestion.py               # Routes wired — Person 1 only touches service
+│       ├── single_llm.py              # Routes wired — Person 2 only touches service
+│       ├── single_rag.py              # Routes wired — Person 3 only touches service
+│       ├── multi_turn_llm.py          # Routes wired — Person 4 only touches service
+│       └── multi_turn_rag.py          # Routes wired — Person 5 only touches service
 ├── tests/
-│   └── test_model_factory.py
-├── data/                    # Gitignored — populated by download scripts
+│   ├── test_ingestion.py
+│   ├── test_single_llm.py
+│   ├── test_single_rag.py
+│   ├── test_multi_turn_llm.py
+│   └── test_multi_turn_rag.py
 ├── requirements.txt
-└── .env.example
+├── .env.example                       # copy to .env and fill in keys
+└── .gitignore
 ```
+
+> **Rule of thumb:** each person only edits their service file(s). Routers, schemas, and core infrastructure are shared — coordinate before changing them.
 
 ---
 
-## Setup
+## Backend setup
 
 ```bash
-# 1. Create and activate conda environment
-conda create -n medical-chatbot python=3.11 -y
-conda activate medical-chatbot
-
-# 2. Install dependencies
+cd backend
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-
-# 3. Pull the local model (one-time, ~5 GB)
-ollama pull llama3.1
-
-# 4. Copy env template and fill in API keys (optional for Task 1)
-cp .env.example .env
+cp .env.example .env          # fill in keys (see below)
+uvicorn app.main:app --reload
 ```
 
-> **Note:** For the non-RAG demo, only Ollama is needed. Cloud API keys (OpenAI, Anthropic, Groq) are not required until later tasks.
+Interactive docs: http://localhost:8000/docs
 
----
+### Required `.env` values
 
-## Downloading the Dataset
+| Key | Where to get it |
+|-----|----------------|
+| `GROQ_API_KEY` | [console.groq.com](https://console.groq.com) — free, no credit card |
+| `PUBMED_EMAIL` | Your UIC email (required by NCBI Entrez) |
+| `OPENAI_API_KEY` | Optional — only needed if switching back to OpenAI models |
+
+The project uses **Groq** (free tier) with `llama-3.3-70b-versatile` by default.
+
+### Seed ChromaDB (run once)
+
+ChromaDB is file-persisted — you only need to do this once per machine. The data survives server restarts.
 
 ```bash
-python scripts/download_pubmedqa.py
+cd backend
+python seed_db.py
 ```
 
-Saves ~1000 labeled PubMedQA records to `data/raw/pubmedqa/pqa_labeled.jsonl`.
+This fetches ~250 PubMed abstracts across 5 medical topics and stores them locally in `chroma_db/`. Takes 3–5 minutes (PubMed rate limits). You'll see batch progress printed as it runs.
+
+> If `chroma_db/` already exists (e.g. a teammate seeded it), skip this step.
 
 ---
 
-## Running Tests
+## API quick-reference
+
+### Health check
+```
+GET /health
+```
+
+### Ingestion (Person 1)
+```
+POST /api/v1/ingestion/ingest          # body: { "query": "...", "max_results": 100 }
+GET  /api/v1/ingestion/status          # check collection size
+```
+Run ingestion once before using any RAG strategy.
+
+### S1 — Single LLM (Person 2)
+```
+POST /api/v1/chat/single-llm/          # body: { "query": "..." }
+```
+
+### S2 — Single RAG (Person 3)
+```
+POST /api/v1/chat/single-rag/          # body: { "query": "...", "top_k": 5 }
+```
+
+### S3 — Multi-Turn LLM (Person 4)
+```
+POST   /api/v1/chat/multi-turn-llm/              # body: { "session_id": "<uuid>", "query": "..." }
+DELETE /api/v1/chat/multi-turn-llm/{session_id}  # reset conversation
+```
+
+### S4 — Multi-Turn RAG (Person 5) ✓ implemented
+```
+POST   /api/v1/chat/multi-turn-rag/              # body: { "session_id": "<uuid>", "query": "...", "top_k": 5 }
+DELETE /api/v1/chat/multi-turn-rag/{session_id}  # clear session history
+```
+
+**`session_id`** — generate once per user conversation (e.g., `uuid.uuid4()` in the frontend). Pass the same ID on every follow-up turn to maintain history.
+
+**Example — first turn:**
+```bash
+curl -s -X POST http://localhost:8000/api/v1/chat/multi-turn-rag/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "my-session-1",
+    "query": "What are the treatments for type 2 diabetes?",
+    "top_k": 3
+  }'
+```
+
+**Example — follow-up turn (same session_id):**
+```bash
+curl -s -X POST http://localhost:8000/api/v1/chat/multi-turn-rag/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "my-session-1",
+    "query": "Can you elaborate on the diet programme mentioned?",
+    "top_k": 3
+  }'
+```
+
+The follow-up query is automatically condensed into a standalone question using conversation history before retrieval, so vague references like "the diet programme mentioned" resolve correctly.
+
+---
+
+## Implementation status
+
+| Strategy | Service | Status |
+|----------|---------|--------|
+| S1 — Single LLM | `llm_service.ask_single` | pending (Person 2) |
+| S2 — Single RAG | `rag_service.retrieve` + `llm_service.ask_with_context` | pending (Person 3) |
+| S3 — Multi-Turn LLM | `llm_service.ask_multi_turn` | pending (Person 4) |
+| S4 — Multi-Turn RAG | `rag_service.retrieve_with_history` + `llm_service.ask_multi_turn_with_context` | **done** |
+
+Unimplemented endpoints return HTTP 501.
+
+## Integration notes
+
+- ChromaDB is file-persisted (`chroma_db/`). Seed it once with `python seed_db.py` before testing S2/S4.
+- The conversation store is in-memory — sessions reset on server restart.
+- Each response includes a `strategy` field (`"S1-single-llm"` etc.) for frontend labelling.
+- S4 uses **query condensation**: follow-up questions are rewritten into standalone queries before retrieval, so history-dependent references resolve correctly in ChromaDB.
+
+---
+
+## Tests
 
 ```bash
-pytest tests/ -v
+cd backend
+pytest                              # run all
+pytest tests/test_single_llm.py    # run one file
 ```
-
----
-
-## Running the Demo
-
-### Non-RAG Baseline (Task 1)
-
-```bash
-# In one terminal — keep running while you run the demo
-ollama serve
-
-# In another terminal
-python scripts/demo_non_rag.py
-```
-
-Runs 5 PubMedQA questions through the local Llama 3.1 8B model with no context, prints expected vs. actual answers and latency, then shows a summary score. Results are auto-saved to `results/non_rag_YYYYMMDD_HHMMSS.json` on every run.
-
-#### Sample Output
-
-A pre-run sample output is committed at [`results/non_rag_sample_run.json`](results/non_rag_sample_run.json)
-for teammates who don't have Ollama set up yet. Each run of the demo also auto-saves a timestamped
-JSON to `results/` locally.
-
-### Ollama Smoke Test
-
-```bash
-python scripts/test_local_model.py
-```
-
----
-
-## Supported Models
-
-| Key | Provider | Model ID | Cost (input/output per 1k tokens) |
-|-----|----------|----------|-----------------------------------|
-| `llama3.1-local` | Ollama | `llama3.1` | Free (local) |
-| `llama3.1-groq` | Groq | `llama-3.3-70b-versatile` | Free (cloud) |
-| `gpt-4o` | OpenAI | `gpt-4o` | $0.0025 / $0.01 |
-| `gpt-4o-mini` | OpenAI | `gpt-4o-mini` | $0.00015 / $0.0006 |
-| `claude-sonnet-4.5` | Anthropic | `claude-sonnet-4-5-20250929` | $0.003 / $0.015 |
-| `claude-haiku-4.5` | Anthropic | `claude-haiku-4-5-20251001` | $0.0008 / $0.004 |
-
----
-
-## Task Status
-
-| Task | Description | Status |
-|------|-------------|--------|
-| 1 | Model selection & simple LLM call (ModelFactory + Non-RAG demo) | Complete |
-| 2 | Vector DB & ingestion pipeline (ChromaDB + document processing) | Planned |
-| 3 | Single-turn RAG chain | Planned |
-| 4 | Multi-turn simple LLM (conversation memory, no retrieval) | Planned |
-| 5 | Multi-turn RAG (conversation memory + retrieval) | Planned |
-| 6 | Chatbot UI & performance evaluation | Planned |
