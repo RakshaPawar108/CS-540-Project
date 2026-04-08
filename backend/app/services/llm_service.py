@@ -14,6 +14,14 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from app.models.schemas import Message
 from app.config import get_settings
 
+# Shared system prompt used across all four strategies (S1–S4).
+# S2/S3/S4 owners should use this as the base system message.
+MEDICAL_SYSTEM_PROMPT = (
+    "You are a knowledgeable medical assistant. "
+    "Answer questions accurately and concisely using established medical knowledge. "
+    "If you are unsure or the question is outside your knowledge, say so clearly."
+)
+
 
 def _get_llm() -> ChatGroq:
     settings = get_settings()
@@ -26,7 +34,19 @@ def _get_llm() -> ChatGroq:
 
 def ask_single(query: str) -> dict:
     """S1: bare LLM call, no history, no context."""
-    raise NotImplementedError
+    llm = _get_llm()
+    messages = [
+        SystemMessage(content=MEDICAL_SYSTEM_PROMPT),
+        HumanMessage(content=query),
+    ]
+    response = llm.invoke(messages)
+    usage = response.response_metadata.get("token_usage", {})
+    return {
+        "answer": response.content,
+        "model": llm.model_name,
+        "prompt_tokens": usage.get("prompt_tokens"),
+        "completion_tokens": usage.get("completion_tokens"),
+    }
 
 
 def ask_with_context(query: str, context: str) -> dict:
