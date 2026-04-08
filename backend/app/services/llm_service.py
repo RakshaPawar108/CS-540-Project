@@ -92,7 +92,27 @@ def ask_single(query: str) -> dict:
 
 def ask_with_context(query: str, context: str) -> dict:
     """S2: LLM call augmented with retrieved PubMed context string."""
-    raise NotImplementedError
+    llm = _get_llm()
+
+    system = SystemMessage(content=(
+        "You are a helpful medical assistant. "
+        "Answer the user's question using only the PubMed context provided. "
+        "If the context does not contain enough information, say so. "
+        "Be concise and cite the source PMIDs when relevant.\n\n"
+        f"Context from PubMed:\n{context}"
+    ))
+
+    messages = [system, HumanMessage(content=query)]
+
+    response = llm.invoke(messages)
+    usage = response.response_metadata.get("token_usage", {})
+
+    return {
+        "answer": response.content,
+        "model": llm.model_name,
+        "prompt_tokens": usage.get("prompt_tokens"),
+        "completion_tokens": usage.get("completion_tokens"),
+    }
 
 
 def ask_multi_turn(query: str, history: list[Message]) -> dict:
