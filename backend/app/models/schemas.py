@@ -64,6 +64,9 @@ class MultiTurnLLMRequest(BaseModel):
 class MultiTurnLLMResponse(BaseModel):
     answer: str
     strategy: Literal["S3-multi-turn-llm"] = "S3-multi-turn-llm"
+    model: str | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
     session_id: str
     history_length: int        # number of turns retained
 
