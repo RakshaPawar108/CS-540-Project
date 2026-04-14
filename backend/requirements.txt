@@ -5,6 +5,7 @@ pydantic-settings>=2.2.0
 python-dotenv>=1.0.0
 
 # LLM & orchestration
+langsmith>=0.1.147
 langchain>=0.3.0
 langchain-core>=0.3.0
 langchain-text-splitters>=0.3.0

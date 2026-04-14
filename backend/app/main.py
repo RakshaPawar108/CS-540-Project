@@ -3,6 +3,9 @@ import tarfile
 import threading
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
+load_dotenv()  # must run before LangChain imports so LANGCHAIN_TRACING_V2 is set
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
