@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     # Multi-turn conversation
     max_history_turns: int = 10     # pairs of (user, assistant) to keep
 
+    # LangSmith tracing
+    langsmith_api_key: str = ""
+    langchain_tracing_v2: str = "false"
+    langchain_project: str = "cs540-medical-chatbot"
+    langchain_endpoint: str = "https://api.smith.langchain.com"
+
 
 @lru_cache
 def get_settings() -> Settings:

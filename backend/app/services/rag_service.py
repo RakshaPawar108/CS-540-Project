@@ -6,6 +6,7 @@ Retrieves relevant PubMed chunks from ChromaDB.
 from langchain_chroma import Chroma
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
+from langsmith import traceable
 from app.models.schemas import RetrievedChunk, Message
 from app.config import get_settings
 
@@ -36,6 +37,7 @@ def format_context(chunks: list[RetrievedChunk]) -> str:
     return "\n\n---\n\n".join(parts)
 
 
+@traceable(name="condense-query", tags=["rag", "query-rewrite"])
 def _condense_query(query: str, history: list[Message]) -> str:
     """
     Rewrite the latest query into a self-contained question using conversation

@@ -11,6 +11,7 @@ All functions return a plain dict so routers can map to their response schemas.
 """
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from langsmith import traceable
 
 from app.models.schemas import Message
 from app.config import get_settings
@@ -32,6 +33,7 @@ def _get_llm() -> ChatGroq:
     )
 
 
+@traceable(name="S1-single-llm", tags=["strategy:S1"])
 def ask_single(query: str) -> dict:
     """S1: bare LLM call, no history, no context."""
     llm = _get_llm()
@@ -62,7 +64,6 @@ def ask_with_context(query: str, context: str) -> dict:
     ))
 
     messages = [system, HumanMessage(content=query)]
-
     response = llm.invoke(messages)
     usage = response.response_metadata.get("token_usage", {})
 
@@ -74,6 +75,7 @@ def ask_with_context(query: str, context: str) -> dict:
     }
 
 
+@traceable(name="S3-multi-turn-llm", tags=["strategy:S3", "multi-turn"])
 def ask_multi_turn(query: str, history: list[Message]) -> dict:
     """
     S3: LLM call with full conversation history, no retrieval.
