@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     chroma_collection: str = "pubmed_abstracts"
     chroma_host: str = ""          # e.g. "my-chroma-server.example.com"
     chroma_port: int = 8000
+    chroma_backup_url: str = ""    # URL to chroma_db.tar.gz — downloaded on cold start if DB is empty
 
     # PubMed ingestion
     pubmed_email: str = ""          # required by NCBI Entrez

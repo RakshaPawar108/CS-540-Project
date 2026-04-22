@@ -1,4 +1,7 @@
+import os
+import tarfile
 import threading
+import urllib.request
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -10,27 +13,54 @@ from app.config import get_settings
 from app.services import seeding
 
 
+def _restore_from_backup(backup_url: str, chroma_dir: str):
+    """Download chroma_db.tar.gz and extract it into place."""
+    seeding._state.update({
+        "status": "seeding",
+        "message": "Downloading DB backup...",
+    })
+    tarball = "/tmp/chroma_db.tar.gz"
+    urllib.request.urlretrieve(backup_url, tarball)
+    seeding._state["message"] = "Extracting DB backup..."
+    with tarfile.open(tarball) as tar:
+        tar.extractall(path=os.path.dirname(os.path.abspath(chroma_dir)))
+    os.remove(tarball)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
-    if settings.pubmed_email:
-        def _init_and_seed():
-            # Runs in background — model download + ChromaDB init happen here,
-            # not on the main thread, so the server binds its port immediately.
+
+    def _init():
+        vs = get_vector_store()
+        if vs._collection.count() > 0:
+            seeding._state.update({
+                "status": "ready",
+                "chunks_stored": vs._collection.count(),
+                "message": "DB already populated — skipping seed.",
+            })
+            return
+
+        if settings.chroma_backup_url:
+            # Fast path — restore pre-built DB (~60s) instead of re-seeding (~22h)
+            _restore_from_backup(settings.chroma_backup_url, settings.chroma_persist_dir)
+            # Reinitialise the vector store from the restored files
+            get_vector_store.cache_clear()
             vs = get_vector_store()
-            if vs._collection.count() == 0:
-                seeding.run_seed(
-                    vector_store=vs,
-                    email=settings.pubmed_email,
-                    ncbi_api_key=settings.ncbi_api_key,
-                )
-            else:
-                seeding._state.update({
-                    "status": "ready",
-                    "chunks_stored": vs._collection.count(),
-                    "message": "DB already populated — skipping seed.",
-                })
-        threading.Thread(target=_init_and_seed, daemon=True, name="pubmed-seeder").start()
+            seeding._state.update({
+                "status": "ready",
+                "chunks_stored": vs._collection.count(),
+                "message": f"DB restored from backup — {vs._collection.count()} chunks.",
+            })
+        elif settings.pubmed_email:
+            # Slow path — seed from PubMed (use only when no backup URL is set)
+            seeding.run_seed(
+                vector_store=vs,
+                email=settings.pubmed_email,
+                ncbi_api_key=settings.ncbi_api_key,
+            )
+
+    threading.Thread(target=_init, daemon=True, name="db-init").start()
     yield
 
 
@@ -61,6 +91,6 @@ app.include_router(multi_turn_llm.router,  prefix=API_PREFIX)
 app.include_router(multi_turn_rag.router,  prefix=API_PREFIX)
 
 
-@app.get("/health", tags=["Health"])
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["Health"])
 def health():
     return {"status": "ok"}
