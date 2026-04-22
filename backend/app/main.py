@@ -1,7 +1,6 @@
 import os
 import tarfile
 import threading
-import urllib.request
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -15,12 +14,22 @@ from app.services import seeding
 
 def _restore_from_backup(backup_url: str, chroma_dir: str):
     """Download chroma_db.tar.gz and extract it into place."""
-    seeding._state.update({
-        "status": "seeding",
-        "message": "Downloading DB backup...",
-    })
+    import requests as req
     tarball = "/tmp/chroma_db.tar.gz"
-    urllib.request.urlretrieve(backup_url, tarball)
+
+    seeding._state.update({"status": "seeding", "message": "Downloading DB backup..."})
+    with req.get(backup_url, stream=True, timeout=300, allow_redirects=True) as r:
+        r.raise_for_status()
+        total = int(r.headers.get("content-length", 0))
+        downloaded = 0
+        with open(tarball, "wb") as f:
+            for chunk in r.iter_content(chunk_size=1024 * 1024):  # 1MB chunks
+                f.write(chunk)
+                downloaded += len(chunk)
+                if total:
+                    pct = int(downloaded / total * 100)
+                    seeding._state["message"] = f"Downloading DB backup... {pct}%"
+
     seeding._state["message"] = "Extracting DB backup..."
     with tarfile.open(tarball) as tar:
         tar.extractall(path=os.path.dirname(os.path.abspath(chroma_dir)))
