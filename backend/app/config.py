@@ -16,13 +16,16 @@ class Settings(BaseSettings):
     embedding_model: str = "all-MiniLM-L6-v2"
     embedding_dim: int = 384
 
-    # ChromaDB
+    # ChromaDB — set chroma_host to use a remote server; leave empty for local disk
     chroma_persist_dir: str = "./chroma_db"
     chroma_collection: str = "pubmed_abstracts"
+    chroma_host: str = ""          # e.g. "my-chroma-server.example.com"
+    chroma_port: int = 8000
 
     # PubMed ingestion
     pubmed_email: str = ""          # required by NCBI Entrez
     pubmed_max_results: int = 500
+    ncbi_api_key: str = ""          # optional — raises rate limit from 3 to 10 req/s
 
     # Multi-turn conversation
     max_history_turns: int = 10     # pairs of (user, assistant) to keep

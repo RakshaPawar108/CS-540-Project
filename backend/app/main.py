@@ -1,7 +1,36 @@
+import threading
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import ingestion, single_llm, single_rag, multi_turn_llm, multi_turn_rag
+from app.core.vector_store import get_vector_store
+from app.config import get_settings
+from app.services import seeding
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    settings = get_settings()
+    if settings.pubmed_email:
+        vs = get_vector_store()
+        if vs._collection.count() == 0:
+            def _seed():
+                seeding.run_seed(
+                    vector_store=vs,
+                    email=settings.pubmed_email,
+                    ncbi_api_key=settings.ncbi_api_key,
+                )
+            threading.Thread(target=_seed, daemon=True, name="pubmed-seeder").start()
+        else:
+            seeding._state.update({
+                "status": "ready",
+                "chunks_stored": vs._collection.count(),
+                "message": "DB already populated — skipping seed.",
+            })
+    yield
+
 
 app = FastAPI(
     title="Medical Chatbot Strategy Comparison API",
@@ -11,11 +40,12 @@ app = FastAPI(
         "S1 Single LLM · S2 Single RAG · S3 Multi-Turn LLM · S4 Multi-Turn RAG"
     ),
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # tighten for production
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

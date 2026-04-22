@@ -105,3 +105,7 @@ class IngestionStatusResponse(BaseModel):
     collection: str
     document_count: int
     embedding_model: str
+    seed_status: str        # idle | seeding | ready | error
+    seed_message: str
+    queries_done: int
+    total_queries: int
