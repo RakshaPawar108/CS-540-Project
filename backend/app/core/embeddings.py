@@ -1,26 +1,25 @@
 """
-Shared embedding model — all-MiniLM-L6-v2 via fastembed (ONNX, no torch).
-fastembed releases the GIL during inference so the async event loop stays responsive.
+Shared embedding model — all-MiniLM-L6-v2 via ChromaDB's built-in ONNX runtime.
+No torch, no Rust deps — onnxruntime is already a chromadb dependency.
+Releases the GIL during inference so the async event loop stays responsive.
 """
 from functools import lru_cache
-from app.config import get_settings
 
 
-class _FastEmbedWrapper:
-    """Minimal LangChain-compatible wrapper around fastembed.TextEmbedding."""
+class _ChromaEmbedWrapper:
+    """Wraps chromadb's DefaultEmbeddingFunction to match LangChain's interface."""
 
-    def __init__(self, model_name: str):
-        from fastembed import TextEmbedding   # lazy — deferred until first call
-        self._model = TextEmbedding(model_name)
+    def __init__(self):
+        from chromadb.utils.embedding_functions import DefaultEmbeddingFunction  # lazy
+        self._fn = DefaultEmbeddingFunction()
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        return [emb.tolist() for emb in self._model.embed(texts)]
+        return [list(emb) for emb in self._fn(texts)]
 
     def embed_query(self, text: str) -> list[float]:
-        return next(self._model.embed([text])).tolist()
+        return list(self._fn([text])[0])
 
 
 @lru_cache(maxsize=1)
-def get_embedding_model() -> _FastEmbedWrapper:
-    settings = get_settings()
-    return _FastEmbedWrapper(model_name=settings.embedding_model)
+def get_embedding_model() -> _ChromaEmbedWrapper:
+    return _ChromaEmbedWrapper()

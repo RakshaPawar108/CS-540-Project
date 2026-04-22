@@ -12,9 +12,8 @@ class Settings(BaseSettings):
     groq_model: str = "llama-3.3-70b-versatile"
     temperature: float = 0.0
 
-    # Embeddings — sentence-transformers/all-MiniLM-L6-v2 (runs locally, no API key)
+    # Embeddings — all-MiniLM-L6-v2 via chromadb's built-in ONNX runtime (no torch)
     embedding_model: str = "all-MiniLM-L6-v2"
-    embedding_dim: int = 384
 
     # ChromaDB — set chroma_host to use a remote server; leave empty for local disk
     chroma_persist_dir: str = "./chroma_db"

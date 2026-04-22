@@ -14,9 +14,8 @@ langchain-chroma>=0.1.0
 openai>=1.30.0
 groq>=0.9.0
 
-# Vector store & embeddings
+# Vector store & embeddings — chromadb includes onnxruntime for its default embedding function
 chromadb>=0.5.0
-fastembed>=0.3.0
 
 # PubMed ingestion
 biopython>=1.83
