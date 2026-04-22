@@ -14,10 +14,10 @@ class _ChromaEmbedWrapper:
         self._fn = DefaultEmbeddingFunction()
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        return [list(emb) for emb in self._fn(texts)]
+        return [emb.tolist() for emb in self._fn(texts)]
 
     def embed_query(self, text: str) -> list[float]:
-        return list(self._fn([text])[0])
+        return self._fn([text])[0].tolist()
 
 
 @lru_cache(maxsize=1)
