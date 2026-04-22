@@ -1,16 +1,17 @@
 """
-ChromaDB client — connects to a remote HTTP server when CHROMA_HOST is set,
+ChromaDB client — lazy imports so chromadb doesn't load at startup.
+Connects to a remote HTTP server when CHROMA_HOST is set,
 otherwise falls back to a local persisted directory.
 """
 from functools import lru_cache
-import chromadb
-from langchain_chroma import Chroma
 from app.config import get_settings
 from app.core.embeddings import get_embedding_model
 
 
 @lru_cache(maxsize=1)
-def get_vector_store() -> Chroma:
+def get_vector_store():
+    import chromadb                          # lazy — deferred until first call
+    from langchain_chroma import Chroma      # lazy — deferred until first call
     settings = get_settings()
     if settings.chroma_host:
         client = chromadb.HttpClient(

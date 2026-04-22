@@ -7,8 +7,6 @@ Progress is tracked in module-level _state and readable via get_state().
 import time
 import requests
 from Bio import Entrez
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_chroma import Chroma
 
 # ---------------------------------------------------------------------------
 # Seed state — updated in-place by run_seed(), read by the status endpoint
@@ -106,11 +104,13 @@ DOMAIN_QUERIES: list[str] = [
 
 MAX_RESULTS_PER_QUERY = 200
 
-_SPLITTER = RecursiveCharacterTextSplitter(
-    chunk_size=500,
-    chunk_overlap=50,
-    separators=["\n\n", "\n", ". ", " "],
-)
+def _get_splitter():
+    from langchain_text_splitters import RecursiveCharacterTextSplitter  # lazy
+    return RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=50,
+        separators=["\n\n", "\n", ". ", " "],
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -175,8 +175,9 @@ def _fetch_abstract(pmid: str) -> dict | None:
 
 
 def _chunk(doc: dict) -> list[dict]:
+    splitter = _get_splitter()
     chunks = []
-    for i, text in enumerate(_SPLITTER.split_text(doc["full_text"])):
+    for i, text in enumerate(splitter.split_text(doc["full_text"])):
         chunks.append({
             "text": text,
             "metadata": {
@@ -193,7 +194,7 @@ def _chunk(doc: dict) -> list[dict]:
 # Main seeding entry point
 # ---------------------------------------------------------------------------
 
-def run_seed(vector_store: Chroma, email: str, ncbi_api_key: str = "") -> int:
+def run_seed(vector_store, email: str, ncbi_api_key: str = "") -> int:
     """
     Seed the vector store with PubMed abstracts across all 20 domains.
     Stores batches incrementally so partial progress survives an interruption.
