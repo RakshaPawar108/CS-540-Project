@@ -102,7 +102,7 @@ DOMAIN_QUERIES: list[str] = [
     "psoriasis eczema dermatitis treatment",
 ]
 
-MAX_RESULTS_PER_QUERY = 200
+MAX_RESULTS_PER_QUERY = 100
 
 def _get_splitter():
     from langchain_text_splitters import RecursiveCharacterTextSplitter  # lazy
@@ -226,32 +226,31 @@ def run_seed(vector_store, email: str, ncbi_api_key: str = "") -> int:
             new_pmids = [p for p in pmids if p not in seen]
             seen.update(new_pmids)
 
-            batch_chunks: list[dict] = []
+            docs_added = 0
+            chunks_added = 0
             for pmid in new_pmids:
                 doc = _fetch_full_text(pmid) or _fetch_abstract(pmid)
                 if doc:
-                    batch_chunks.extend(_chunk(doc))
+                    chunks = _chunk(doc)
+                    if chunks:
+                        # store one document at a time — keeps peak memory low
+                        vector_store.add_texts(
+                            texts=[c["text"] for c in chunks],
+                            metadatas=[c["metadata"] for c in chunks],
+                            ids=[
+                                f"{c['metadata']['pmid']}_chunk_{c['metadata']['chunk_index']}"
+                                for c in chunks
+                            ],
+                        )
+                        chunks_added += len(chunks)
+                        docs_added += 1
                 time.sleep(sleep_s)
-
-            if batch_chunks:
-                texts = [c["text"] for c in batch_chunks]
-                metas = [c["metadata"] for c in batch_chunks]
-                ids = [
-                    f"{c['metadata']['pmid']}_chunk_{c['metadata']['chunk_index']}"
-                    for c in batch_chunks
-                ]
-                for i in range(0, len(texts), 100):
-                    vector_store.add_texts(
-                        texts=texts[i:i + 100],
-                        metadatas=metas[i:i + 100],
-                        ids=ids[i:i + 100],
-                    )
 
             _state["queries_done"] = qi + 1
             _state["chunks_stored"] = vector_store._collection.count()
             _state["message"] = (
                 f"Query {qi + 1}/{total_q}: '{query}' "
-                f"— {len(batch_chunks)} chunks added "
+                f"— {docs_added} docs, {chunks_added} chunks "
                 f"(total: {_state['chunks_stored']})"
             )
 
