@@ -1,0 +1,17 @@
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.dot {
+  display: block;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+}
+
+.red    { background: var(--color-dot-red); }
+.orange { background: var(--color-dot-orange); }
+.green  { background: var(--color-dot-green); }
