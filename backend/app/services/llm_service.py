@@ -51,6 +51,7 @@ def ask_single(query: str) -> dict:
     }
 
 
+@traceable(name="S2-single-rag", tags=["strategy:S2"])
 def ask_with_context(query: str, context: str) -> dict:
     """S2: LLM call augmented with retrieved PubMed context string."""
     llm = _get_llm()
@@ -104,6 +105,7 @@ def ask_multi_turn(query: str, history: list[Message]) -> dict:
     }
 
 
+@traceable(name="S4-multi-turn-rag", tags=["strategy:S4", "multi-turn"])
 def ask_multi_turn_with_context(query: str, history: list[Message], context: str) -> dict:
     """S4: LLM call with conversation history + retrieved PubMed context."""
     llm = _get_llm()

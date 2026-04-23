@@ -6,8 +6,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # LLM
-    openai_api_key: str = ""
-    openai_model: str = "gpt-4o-mini"
     groq_api_key: str = ""
     groq_model: str = "llama-3.3-70b-versatile"
     temperature: float = 0.0
@@ -29,6 +27,7 @@ class Settings(BaseSettings):
 
     # Multi-turn conversation
     max_history_turns: int = 10     # pairs of (user, assistant) to keep
+    condense_window: int = 3        # how many recent turns to pass to the condense LLM call
 
     # LangSmith tracing
     langsmith_api_key: str = ""

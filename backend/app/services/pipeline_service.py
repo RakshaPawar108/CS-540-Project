@@ -2,77 +2,46 @@
 Pipeline wrappers for LangSmith tracing.
 
 Each function wraps one full strategy pipeline under a single @traceable root,
-so all sub-calls (retrieval, condense-query, LLM) appear as nested child runs.
+so all sub-calls (condense, retrieve, LLM) appear as nested child runs.
 """
 from langchain_chroma import Chroma
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langsmith import traceable
 
 from app.models.schemas import Message
-from app.services import rag_service
-from app.services.llm_service import _get_llm
+from app.config import get_settings
+from app.services import rag_service, llm_service
 
 
 @traceable(name="S2-pipeline", run_type="chain", tags=["strategy:S2", "rag"])
 def run_s2(query: str, vector_store: Chroma, top_k: int) -> dict:
-    """S2: retrieve → generate. Both steps nested under this trace."""
+    """S2: retrieve → generate."""
     chunks = rag_service.retrieve(query, vector_store, top_k)
     context = rag_service.format_context(chunks)
+    result = llm_service.ask_with_context(query, context)
+    return {**result, "chunks": chunks}
 
-    llm = _get_llm()
-    system = SystemMessage(content=(
-        "You are a helpful medical assistant. "
-        "Answer the user's question using only the PubMed context provided. "
-        "If the context does not contain enough information, say so. "
-        "Be concise and cite the source PMIDs when relevant.\n\n"
-        f"Context from PubMed:\n{context}"
-    ))
-    response = llm.invoke([system, HumanMessage(content=query)])
-    usage = response.response_metadata.get("token_usage", {})
 
-    return {
-        "answer": response.content,
-        "model": llm.model_name,
-        "prompt_tokens": usage.get("prompt_tokens"),
-        "completion_tokens": usage.get("completion_tokens"),
-        "chunks": chunks,
-    }
+@traceable(name="S3-pipeline", run_type="chain", tags=["strategy:S3", "multi-turn"])
+def run_s3(query: str, history: list[Message]) -> dict:
+    """S3: condense query using recent history → LLM call with condensed query only."""
+    settings = get_settings()
+    window = settings.condense_window
+    recent = history[-window:] if len(history) > window else history
+
+    condensed = rag_service.condense_query_s3(query, recent)
+    result = llm_service.ask_multi_turn(condensed, [])
+    return {**result, "condensed_query": condensed}
 
 
 @traceable(name="S4-pipeline", run_type="chain", tags=["strategy:S4", "multi-turn", "rag"])
 def run_s4(query: str, history: list[Message], vector_store: Chroma, top_k: int) -> dict:
-    """S4: condense → retrieve → generate. All steps nested under this trace."""
-    # Step 1: condense query using history
-    standalone_query = rag_service._condense_query(query, history)
+    """S4: condense query → retrieve → generate with condensed query + context."""
+    settings = get_settings()
+    window = settings.condense_window
+    recent = history[-window:] if len(history) > window else history
 
-    # Step 2: retrieve chunks
-    chunks = rag_service.retrieve(standalone_query, vector_store, top_k)
+    condensed = rag_service.condense_query_s4(query, recent)
+    chunks = rag_service.retrieve(condensed, vector_store, top_k)
     context = rag_service.format_context(chunks)
-
-    # Step 3: generate answer
-    llm = _get_llm()
-    system = SystemMessage(content=(
-        "You are a helpful medical assistant. "
-        "Answer the user's question using only the PubMed context provided. "
-        "If the context does not contain enough information, say so. "
-        "Be concise and cite the source PMIDs when relevant.\n\n"
-        f"Context from PubMed:\n{context}"
-    ))
-    messages = [system]
-    for m in history:
-        if m.role == "user":
-            messages.append(HumanMessage(content=m.content))
-        else:
-            messages.append(AIMessage(content=m.content))
-    messages.append(HumanMessage(content=query))
-
-    response = llm.invoke(messages)
-    usage = response.response_metadata.get("token_usage", {})
-
-    return {
-        "answer": response.content,
-        "model": llm.model_name,
-        "prompt_tokens": usage.get("prompt_tokens"),
-        "completion_tokens": usage.get("completion_tokens"),
-        "chunks": chunks,
-    }
+    result = llm_service.ask_multi_turn_with_context(condensed, history, context)
+    return {**result, "chunks": chunks}
