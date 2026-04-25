@@ -50,6 +50,8 @@ class SingleRAGResponse(BaseModel):
     strategy: Literal["S2-single-rag"] = "S2-single-rag"
     retrieved_chunks: list[RetrievedChunk]
     model: str
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -87,6 +89,8 @@ class MultiTurnRAGResponse(BaseModel):
     session_id: str
     retrieved_chunks: list[RetrievedChunk]
     history_length: int
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
 
 
 # ---------------------------------------------------------------------------
