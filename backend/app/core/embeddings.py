@@ -1,17 +1,25 @@
 """
-Shared embedding model — sentence-transformers/all-MiniLM-L6-v2 (384-dim, runs locally).
-Loaded once at startup and injected via FastAPI dependency.
+Shared embedding model — all-MiniLM-L6-v2 via ChromaDB's built-in ONNX runtime.
+No torch, no Rust deps — onnxruntime is already a chromadb dependency.
+Releases the GIL during inference so the async event loop stays responsive.
 """
 from functools import lru_cache
-from langchain_huggingface import HuggingFaceEmbeddings
-from app.config import get_settings
+
+
+class _ChromaEmbedWrapper:
+    """Wraps chromadb's DefaultEmbeddingFunction to match LangChain's interface."""
+
+    def __init__(self):
+        from chromadb.utils.embedding_functions import DefaultEmbeddingFunction  # lazy
+        self._fn = DefaultEmbeddingFunction()
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return [emb.tolist() for emb in self._fn(texts)]
+
+    def embed_query(self, text: str) -> list[float]:
+        return self._fn([text])[0].tolist()
 
 
 @lru_cache(maxsize=1)
-def get_embedding_model() -> HuggingFaceEmbeddings:
-    settings = get_settings()
-    return HuggingFaceEmbeddings(
-        model_name=settings.embedding_model,
-        model_kwargs={"device": "cpu"},
-        encode_kwargs={"normalize_embeddings": True},
-    )
+def get_embedding_model() -> _ChromaEmbedWrapper:
+    return _ChromaEmbedWrapper()

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from langchain_chroma import Chroma
 
 from app.models.schemas import SingleRAGRequest, SingleRAGResponse
-from app.services import llm_service, rag_service
+from app.services.pipeline_service import run_s2
 from app.core.vector_store import get_vector_store
 
 router = APIRouter(prefix="/chat/single-rag", tags=["S2 — Single RAG"])
@@ -16,9 +16,8 @@ router = APIRouter(prefix="/chat/single-rag", tags=["S2 — Single RAG"])
 def single_rag(body: SingleRAGRequest, vector_store: Chroma = Depends(get_vector_store)):
     """Retrieve relevant PubMed chunks, then answer using the LLM with that context."""
     try:
-        chunks = rag_service.retrieve(body.query, vector_store, body.top_k)
-        context = rag_service.format_context(chunks)
-        result = llm_service.ask_with_context(body.query, context)
+        result = run_s2(body.query, vector_store, body.top_k)
+        chunks = result.pop("chunks")
         return SingleRAGResponse(**result, retrieved_chunks=chunks)
     except NotImplementedError:
         raise HTTPException(status_code=501, detail="S2 not yet implemented.")

@@ -50,6 +50,8 @@ class SingleRAGResponse(BaseModel):
     strategy: Literal["S2-single-rag"] = "S2-single-rag"
     retrieved_chunks: list[RetrievedChunk]
     model: str
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -64,6 +66,9 @@ class MultiTurnLLMRequest(BaseModel):
 class MultiTurnLLMResponse(BaseModel):
     answer: str
     strategy: Literal["S3-multi-turn-llm"] = "S3-multi-turn-llm"
+    model: str | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
     session_id: str
     history_length: int        # number of turns retained
 
@@ -84,6 +89,8 @@ class MultiTurnRAGResponse(BaseModel):
     session_id: str
     retrieved_chunks: list[RetrievedChunk]
     history_length: int
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -105,3 +112,7 @@ class IngestionStatusResponse(BaseModel):
     collection: str
     document_count: int
     embedding_model: str
+    seed_status: str        # idle | seeding | ready | error
+    seed_message: str
+    queries_done: int
+    total_queries: int

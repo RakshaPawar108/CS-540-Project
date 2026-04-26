@@ -5,7 +5,7 @@ Routes: /api/v1/chat/multi-turn-llm/...
 from fastapi import APIRouter, HTTPException
 
 from app.models.schemas import MultiTurnLLMRequest, MultiTurnLLMResponse
-from app.services import llm_service
+from app.services.pipeline_service import run_s3
 from app.services.conversation_store import get_history, append_turn, clear_session, session_length
 
 router = APIRouter(prefix="/chat/multi-turn-llm", tags=["S3 — Multi-Turn LLM"])
@@ -13,11 +13,12 @@ router = APIRouter(prefix="/chat/multi-turn-llm", tags=["S3 — Multi-Turn LLM"]
 
 @router.post("/", response_model=MultiTurnLLMResponse)
 def multi_turn_llm(body: MultiTurnLLMRequest):
-    """Answer using the full conversation history — no retrieval."""
+    """Condense query using recent history, then answer — no retrieval."""
     try:
         history = get_history(body.session_id)
-        result = llm_service.ask_multi_turn(body.query, history)
-        append_turn(body.session_id, body.query, result["answer"])
+        result = run_s3(body.query, history)
+        condensed_query = result.pop("condensed_query")
+        append_turn(body.session_id, condensed_query, result["answer"])
         return MultiTurnLLMResponse(
             **result,
             session_id=body.session_id,

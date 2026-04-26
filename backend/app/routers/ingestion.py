@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from langchain_chroma import Chroma
 
 from app.models.schemas import IngestionRequest, IngestionResponse, IngestionStatusResponse
-from app.services import ingestion_service
+from app.services import ingestion_service, seeding
 from app.core.vector_store import get_vector_store
 from app.config import get_settings, Settings
 
@@ -39,10 +39,15 @@ def ingestion_status(
     vector_store: Chroma = Depends(get_vector_store),
     settings: Settings = Depends(get_settings),
 ):
-    """Return current ChromaDB collection size and embedding model info."""
+    """Return ChromaDB collection size and live seeding progress."""
+    state = seeding.get_state()
     count = ingestion_service.get_collection_count(vector_store)
     return IngestionStatusResponse(
         collection=settings.chroma_collection,
         document_count=count,
         embedding_model=settings.embedding_model,
+        seed_status=state["status"],
+        seed_message=state["message"],
+        queries_done=state["queries_done"],
+        total_queries=state["total_queries"],
     )

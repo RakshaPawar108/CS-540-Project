@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from langchain_chroma import Chroma
 
 from app.models.schemas import MultiTurnRAGRequest, MultiTurnRAGResponse
-from app.services import llm_service, rag_service
+from app.services.pipeline_service import run_s4
 from app.services.conversation_store import get_history, append_turn, clear_session, session_length
 from app.core.vector_store import get_vector_store
 
@@ -18,9 +18,8 @@ def multi_turn_rag(body: MultiTurnRAGRequest, vector_store: Chroma = Depends(get
     """Retrieve PubMed context, then answer using full conversation history + context."""
     try:
         history = get_history(body.session_id)
-        chunks = rag_service.retrieve_with_history(body.query, history, vector_store, body.top_k)
-        context = rag_service.format_context(chunks)
-        result = llm_service.ask_multi_turn_with_context(body.query, history, context)
+        result = run_s4(body.query, history, vector_store, body.top_k)
+        chunks = result.pop("chunks")
         append_turn(body.session_id, body.query, result["answer"])
         return MultiTurnRAGResponse(
             **result,
