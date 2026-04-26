@@ -1,0 +1,22 @@
+.window {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--color-chat-bg);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-md) 0;
+  scroll-behavior: smooth;
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyText {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  text-align: center;
+}

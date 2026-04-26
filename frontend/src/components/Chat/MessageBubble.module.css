@@ -1,0 +1,48 @@
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-lg);
+  max-width: 100%;
+}
+
+.userRow {
+  flex-direction: row-reverse;
+}
+
+.assistantRow {
+  flex-direction: row;
+}
+
+.bubble {
+  max-width: 70%;
+  padding: 11px 16px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-bubble);
+  word-break: break-word;
+}
+
+.userBubble {
+  background: var(--color-user-bubble);
+  color: var(--color-text-light);
+  border-bottom-right-radius: 4px;
+}
+
+.assistantBubble {
+  background: var(--color-ai-bubble);
+  color: var(--color-text-dark);
+  border: 1px solid var(--color-border);
+  border-bottom-left-radius: 4px;
+}
+
+.errorBubble {
+  background: var(--color-error-bg);
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.text {
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
