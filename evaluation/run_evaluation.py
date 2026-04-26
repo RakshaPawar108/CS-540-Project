@@ -185,12 +185,16 @@ def evaluate_session(
             try:
                 if strategy == "S1":
                     api = _call_s1(client, base, question)
+                    time.sleep(0.5)  # avoid Groq rate limits between per-strategy calls
                 elif strategy == "S2":
                     api = _call_s2(client, base, question)
+                    time.sleep(0.5)  # avoid Groq rate limits between per-strategy calls
                 elif strategy == "S3":
                     api = _call_s3(client, base, question, session_id_s3)
+                    time.sleep(0.5)  # avoid Groq rate limits between per-strategy calls
                 else:
                     api = _call_s4(client, base, question, session_id_s4)
+                    time.sleep(0.5)  # avoid Groq rate limits between per-strategy calls
             except Exception as exc:
                 print(f"ERROR: {exc}")
                 api = {"answer": "", "prompt_tokens": None, "completion_tokens": None,
