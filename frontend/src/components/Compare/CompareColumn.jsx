@@ -10,6 +10,8 @@ export default function CompareColumn({ strategy, messages, loading }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  const lastLatencyMs = [...messages].reverse().find(m => m.role === 'assistant')?.latencyMs;
+
   return (
     <div className={styles.column}>
       <div className={styles.columnHeader}>
@@ -21,6 +23,14 @@ export default function CompareColumn({ strategy, messages, loading }) {
           <span className={`${styles.badge} ${strategy.hasMemory ? styles.badgeOn : styles.badgeOff}`}>
             Memory
           </span>
+          {loading
+            ? <span className={`${styles.badge} ${styles.badgeTimer}`}>…</span>
+            : lastLatencyMs != null && (
+              <span className={`${styles.badge} ${styles.badgeTimer}`}>
+                {(lastLatencyMs / 1000).toFixed(1)}s
+              </span>
+            )
+          }
         </div>
       </div>
 

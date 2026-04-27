@@ -31,6 +31,7 @@ export function useChat() {
     const userMessage = { role: 'user', content: text };
     setMessages(prev => [...prev, userMessage]);
     setLoading(true);
+    const start = Date.now();
 
     try {
       const data = await sendMessage({
@@ -45,6 +46,7 @@ export function useChat() {
           role: 'assistant',
           content: data.answer,
           chunks: data.retrieved_chunks ?? [],
+          latencyMs: Date.now() - start,
           meta: {
             strategy: data.strategy,
             model: data.model,
@@ -55,7 +57,7 @@ export function useChat() {
     } catch (err) {
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', content: err.message, isError: true },
+        { role: 'assistant', content: err.message, isError: true, latencyMs: Date.now() - start },
       ]);
     } finally {
       setLoading(false);
