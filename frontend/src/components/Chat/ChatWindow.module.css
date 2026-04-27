@@ -1,7 +1,9 @@
 .window {
   flex: 1;
   overflow-y: auto;
-  background: var(--color-chat-bg);
+  background-color: var(--color-chat-bg);
+  background-image: radial-gradient(circle, var(--color-border) 1px, transparent 1px);
+  background-size: 24px 24px;
   display: flex;
   flex-direction: column;
   padding: var(--space-md) 0;
@@ -22,6 +24,11 @@
   font-size: var(--font-size-base);
   color: var(--color-text-muted);
   text-align: center;
+}
+
+.emptyIcon {
+  color: var(--color-teal);
+  opacity: 0.2;
 }
 
 .suggestions {

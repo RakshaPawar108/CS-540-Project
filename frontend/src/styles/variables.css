@@ -1,14 +1,15 @@
 :root {
   /* Colors */
   --color-header-bg: #1e0b13;
-  --color-teal: #28a99a;
-  --color-teal-dark: #1f8a7d;
-  --color-user-bubble: #451a2e;
-  --color-user-bubble-hover: #5a2240;
-  --color-ai-bubble: #ffffff;
-  --color-bg: #f0edec;
+  --color-surface-mid: #2e1220;
+  --color-teal: #17a398;
+  --color-teal-dark: #128d82;
+  --color-user-bubble: #5c1f38;
+  --color-user-bubble-hover: #6e2545;
+  --color-ai-bubble: #fefcfb;
+  --color-bg: #e8e4e2;
   --color-chat-bg: #faf8f7;
-  --color-border: #e0d8d5;
+  --color-border: #d8d0cc;
   --color-text-light: #f5f1f0;
   --color-text-muted: #9a8f8c;
   --color-text-dark: #1a1a1a;

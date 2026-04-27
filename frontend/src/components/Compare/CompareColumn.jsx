@@ -3,7 +3,9 @@ import MessageBubble from '../Chat/MessageBubble';
 import TypingIndicator from '../Chat/TypingIndicator';
 import styles from './CompareColumn.module.css';
 
-export default function CompareColumn({ strategy, messages, loading }) {
+const COLUMN_ACCENTS = ['#17a398', '#5b8ef0', '#e07b39', '#c45c8a'];
+
+export default function CompareColumn({ strategy, messages, loading, colorIndex }) {
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -11,10 +13,11 @@ export default function CompareColumn({ strategy, messages, loading }) {
   }, [messages, loading]);
 
   const lastLatencyMs = [...messages].reverse().find(m => m.role === 'assistant')?.latencyMs;
+  const accent = COLUMN_ACCENTS[colorIndex] ?? COLUMN_ACCENTS[0];
 
   return (
     <div className={styles.column}>
-      <div className={styles.columnHeader}>
+      <div className={styles.columnHeader} style={{ borderBottomColor: accent }}>
         <span className={styles.label}>{strategy.label}</span>
         <div className={styles.badges}>
           <span className={`${styles.badge} ${strategy.hasRAG ? styles.badgeOn : styles.badgeOff}`}>
@@ -24,9 +27,9 @@ export default function CompareColumn({ strategy, messages, loading }) {
             Memory
           </span>
           {loading
-            ? <span className={`${styles.badge} ${styles.badgeTimer}`}>…</span>
+            ? <span className={`${styles.badge} ${styles.badgeTimer}`} style={{ color: accent }}>…</span>
             : lastLatencyMs != null && (
-              <span className={`${styles.badge} ${styles.badgeTimer}`}>
+              <span className={`${styles.badge} ${styles.badgeTimer}`} style={{ color: accent }}>
                 {(lastLatencyMs / 1000).toFixed(1)}s
               </span>
             )
