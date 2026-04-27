@@ -50,9 +50,33 @@
   color: var(--color-teal-dark);
 }
 
-.score {
+.scoreBar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.scoreTrack {
+  width: 60px;
+  height: 5px;
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.scoreFill {
+  height: 100%;
+  border-radius: var(--radius-full);
+}
+
+.scoreHigh { background: var(--color-teal); }
+.scoreMid  { background: var(--color-dot-orange); }
+.scoreLow  { background: var(--color-dot-red); }
+
+.scoreText {
   font-size: 0.72rem;
   color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .content {
