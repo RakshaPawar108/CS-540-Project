@@ -1,3 +1,4 @@
+import ReactMarkdown from 'react-markdown';
 import Avatar from './Avatar';
 import SourceChunks from './SourceChunks';
 import styles from './MessageBubble.module.css';
@@ -11,7 +12,10 @@ export default function MessageBubble({ message }) {
       {!isUser && <Avatar role="assistant" />}
 
       <div className={`${styles.bubble} ${isUser ? styles.userBubble : styles.assistantBubble} ${isError ? styles.errorBubble : ''}`}>
-        <p className={styles.text}>{content}</p>
+        {isUser
+          ? <p className={styles.text}>{content}</p>
+          : <div className={styles.markdown}><ReactMarkdown>{content}</ReactMarkdown></div>
+        }
         {!isUser && <SourceChunks chunks={chunks} />}
       </div>
 
