@@ -27,6 +27,7 @@ export function useCompare() {
 
     await Promise.allSettled(
       STRATEGIES.map(async (strategy) => {
+        const start = Date.now();
         try {
           const data = await sendMessage({
             strategy,
@@ -44,6 +45,7 @@ export function useCompare() {
                   role: 'assistant',
                   content: data.answer,
                   chunks: data.retrieved_chunks ?? [],
+                  latencyMs: Date.now() - start,
                   meta: {
                     strategy: data.strategy,
                     model: data.model,
@@ -60,7 +62,7 @@ export function useCompare() {
               loading: false,
               messages: [
                 ...prev[strategy.id].messages,
-                { role: 'assistant', content: err.message, isError: true },
+                { role: 'assistant', content: err.message, isError: true, latencyMs: Date.now() - start },
               ],
             },
           }));

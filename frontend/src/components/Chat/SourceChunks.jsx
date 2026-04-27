@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import styles from './SourceChunks.module.css';
 
+function scoreColorClass(score) {
+  if (score >= 0.75) return styles.scoreHigh;
+  if (score >= 0.50) return styles.scoreMid;
+  return styles.scoreLow;
+}
+
 export default function SourceChunks({ chunks }) {
   const [open, setOpen] = useState(false);
 
@@ -24,7 +30,15 @@ export default function SourceChunks({ chunks }) {
             <li key={i} className={styles.chunk}>
               <div className={styles.chunkHeader}>
                 <span className={styles.source}>PubMed: {chunk.source}</span>
-                <span className={styles.score}>{(chunk.score * 100).toFixed(0)}% match</span>
+                <div className={styles.scoreBar}>
+                  <div className={styles.scoreTrack}>
+                    <div
+                      className={`${styles.scoreFill} ${scoreColorClass(chunk.score)}`}
+                      style={{ width: `${(chunk.score * 100).toFixed(0)}%` }}
+                    />
+                  </div>
+                  <span className={styles.scoreText}>{(chunk.score * 100).toFixed(0)}%</span>
+                </div>
               </div>
               <p className={styles.content}>{chunk.content}</p>
             </li>
