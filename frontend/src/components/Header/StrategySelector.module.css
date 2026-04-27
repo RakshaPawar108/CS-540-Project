@@ -2,6 +2,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  position: relative;
 }
 
 .label {
@@ -39,4 +40,85 @@
 .select option {
   background: #2b1020;
   color: var(--color-text-light);
+}
+
+.infoBtn {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.infoBtn:hover {
+  color: var(--color-teal);
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 100;
+  background: var(--color-ai-bubble);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  width: 320px;
+  padding: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.popoverItem {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  transition: background 0.1s;
+}
+
+.popoverItem:hover {
+  background: var(--color-bg);
+}
+
+.popoverHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.popoverLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-dark);
+}
+
+.popoverBadges {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.popoverBadge {
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.badgeOn {
+  background: var(--color-teal);
+  color: #fff;
+}
+
+.badgeOff {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.popoverDesc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
 }

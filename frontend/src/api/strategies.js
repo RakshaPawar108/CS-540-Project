@@ -2,7 +2,7 @@ export const STRATEGIES = [
   {
     id: 'S1',
     label: 'S1 — Simple LLM',
-    description: 'No RAG, no memory',
+    description: 'Sends your question directly to the LLM with no retrieval or conversation memory. Fast responses based purely on the model\'s training data.',
     endpoint: '/api/v1/chat/single-llm/',
     hasMemory: false,
     hasRAG: false,
@@ -10,7 +10,7 @@ export const STRATEGIES = [
   {
     id: 'S2',
     label: 'S2 — Single RAG',
-    description: 'With RAG, no memory',
+    description: 'Retrieves relevant PubMed abstracts before each response, grounding answers in medical literature. Each turn is independent — prior context is not retained.',
     endpoint: '/api/v1/chat/single-rag/',
     hasMemory: false,
     hasRAG: true,
@@ -18,7 +18,7 @@ export const STRATEGIES = [
   {
     id: 'S3',
     label: 'S3 — Multi-Turn LLM',
-    description: 'No RAG, with memory',
+    description: 'Maintains full conversation history across turns, enabling follow-up questions. Responses rely on model knowledge alone — no document retrieval.',
     endpoint: '/api/v1/chat/multi-turn-llm/',
     hasMemory: true,
     hasRAG: false,
@@ -26,7 +26,7 @@ export const STRATEGIES = [
   {
     id: 'S4',
     label: 'S4 — Multi-Turn RAG',
-    description: 'With RAG + memory',
+    description: 'Combines PubMed retrieval with conversation memory. The most capable strategy for multi-turn medical Q&A grounded in clinical literature.',
     endpoint: '/api/v1/chat/multi-turn-rag/',
     hasMemory: true,
     hasRAG: true,
